@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quanto vira?
 
-## Getting Started
+Simulador de aportes mensais em ações e fundos imobiliários da B3. Você diz quanto investe por mês e em qual ativo, e o site projeta o saldo ao longo do tempo a partir dos dados atuais do ativo (preço da cota e proventos dos últimos 12 meses).
 
-First, run the development server:
+## Como funciona
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+1. **Abertura** de 3 segundos ao entrar no site.
+2. **Início:** a frase "Se eu investir R$ ___ por mês em ___, quanto vira?", com busca de ações ou FIIs.
+3. **Resultado:** saldo final, gráfico de saldo × tempo contra o total investido, tabela ano a ano e premissas ajustáveis (prazo, dividend yield, valorização da cota, reinvestir ou não os proventos).
+4. **Recomeçar:** volta ao início mantendo o valor do aporte, para testar outro ativo.
+
+Todas as premissas ficam na URL, então qualquer simulação pode ser compartilhada por link.
+
+### A conta, mês a mês
+
+```
+cotas    += aporte / preço
+proventos = cotas × preço × (DY anual / 12)
+cotas    += proventos / preço        (se reinvestir; senão vai para o caixa)
+preço    *= (1 + valorização anual)^(1/12)
+saldo     = cotas × preço + caixa
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A lógica está isolada em `src/lib/simulacao.ts`, sem dependência de React, fácil de testar.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Next.js (App Router) + React + TypeScript
+- Tailwind CSS
+- Recharts para o gráfico
+- [brapi.dev](https://brapi.dev) como fonte de dados
+- Sem banco de dados: o cálculo é feito no navegador e as respostas da API ficam em cache por 1 hora
 
-## Learn More
+## Arquitetura
 
-To learn more about Next.js, take a look at the following resources:
+```
+Navegador ──> /api/busca  ──┐
+          └─> /api/ativo  ──┴──> brapi.dev   (token só no servidor)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+O front-end nunca chama a brapi diretamente. As rotas em `src/app/api/` fazem esse papel, o que mantém o token fora do navegador, evita problemas de CORS e permite cache.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Rodando localmente
 
-## Deploy on Vercel
+```bash
+npm install
+cp .env.example .env.local   # opcional: cole seu BRAPI_TOKEN
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Abra http://localhost:3000.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Sem token** só funcionam PETR4, VALE3, ITUB4, MGLU3, MXRF11 e HGLG11 (ativos de teste liberados pela brapi). **Com o token gratuito**, todos os ativos funcionam, mas o plano grátis não traz dividendos nem histórico de 12 meses; nesses casos o site pede que o usuário informe o dividend yield.
+
+## Deploy no Vercel
+
+1. Suba o projeto para o GitHub.
+2. Importe o repositório em vercel.com/new.
+3. Em *Settings > Environment Variables*, adicione `BRAPI_TOKEN`.
+
+## Limitações
+
+Simulação educativa, não é recomendação de investimento. Não considera impostos, taxas, inflação nem lotes mínimos (supõe cotas fracionárias). Proventos e valorização futuros não são garantidos.
