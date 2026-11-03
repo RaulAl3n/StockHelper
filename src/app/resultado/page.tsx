@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Resultado } from "@/components/Resultado";
 
 export const metadata: Metadata = {
-  title: "Resultado | Quanto vira?",
+  title: "Resultado | StockHelper",
 };
 
 export default function PaginaResultado() {

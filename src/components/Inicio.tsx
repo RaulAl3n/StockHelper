@@ -62,7 +62,7 @@ export function Inicio() {
 
       <div className={abrindo ? "invisible" : undefined}>
         <header className="mx-auto w-full max-w-4xl px-4 pt-6 sm:px-8">
-          <p className="text-lg font-bold tracking-tight">Quanto vira?</p>
+          <p className="text-lg font-bold tracking-tight">StockHelper</p>
         </header>
 
         <main className="mx-auto w-full max-w-4xl px-4 pb-16 pt-16 sm:px-8 sm:pt-24">

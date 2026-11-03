@@ -1,4 +1,4 @@
-# Quanto vira?
+# StockHelper
 
 Simulador de aportes mensais em ações e fundos imobiliários da B3. Você diz quanto investe por mês e em qual ativo, e o site projeta o saldo ao longo do tempo a partir dos dados atuais do ativo (preço da cota e proventos dos últimos 12 meses).
 

@@ -310,7 +310,7 @@ function Moldura({ children, linkRecomecar }: { children: React.ReactNode; linkR
     <>
       <header className="mx-auto w-full max-w-4xl px-4 pt-6 sm:px-8">
         <Link href={linkRecomecar} className="text-lg font-bold tracking-tight">
-          Quanto vira?
+          StockHelper
         </Link>
       </header>
       <main className="mx-auto w-full max-w-4xl px-4 pb-16 pt-12 sm:px-8 sm:pt-16">{children}</main>

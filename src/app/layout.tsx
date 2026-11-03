@@ -4,7 +4,7 @@ import "@fontsource-variable/bricolage-grotesque/opsz.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Quanto vira? | Simulador de aportes mensais",
+  title: "StockHelper | Simulador de aportes mensais",
   description:
     "Descubra quanto seu aporte mensal em uma ação ou fundo imobiliário pode virar, com dividendos reinvestidos.",
 };

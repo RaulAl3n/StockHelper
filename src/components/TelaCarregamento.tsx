@@ -22,7 +22,7 @@ export function TelaCarregamento() {
           strokeLinecap="round"
         />
       </svg>
-      <p className="mt-8 text-4xl font-bold tracking-tight sm:text-5xl">Quanto vira?</p>
+      <p className="mt-8 text-4xl font-bold tracking-tight sm:text-5xl">StockHelper</p>
       <div className="mt-6 h-1 w-40 overflow-hidden rounded-full bg-linha">
         <div className="barra-carregando h-full w-full bg-cobalto" />
       </div>
