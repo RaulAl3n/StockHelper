@@ -25,10 +25,20 @@ export const formatarPercentual = (v: number) => percentual.format(v);
 export function lerValor(texto: string): number {
   const limpo = texto.replace(/[^\d.,-]/g, "");
   if (!limpo) return NaN;
-  const normalizado = limpo.includes(",")
-    ? limpo.replace(/\./g, "").replace(",", ".")
-    : limpo;
-  return Number(normalizado);
+
+  // Com vírgula, é o formato brasileiro: pontos separam milhar, a vírgula é decimal.
+  if (limpo.includes(",")) {
+    return Number(limpo.replace(/\./g, "").replace(",", "."));
+  }
+
+  // Sem vírgula, pontos em grupos de 3 dígitos são separadores de milhar
+  // ("1.200" -> 1200, "1.500.000" -> 1500000), como o próprio campo formata.
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(limpo)) {
+    return Number(limpo.replace(/\./g, ""));
+  }
+
+  // Caso contrário, um ponto é decimal ("1200.50", vindo da URL, ou "8.5").
+  return Number(limpo);
 }
 
 /** Número para o formato de digitação brasileiro, sem símbolo: 1500 -> "1.500". */
