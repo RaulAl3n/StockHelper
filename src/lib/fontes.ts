@@ -10,13 +10,22 @@ import type { AtivoInfo, ResultadoBusca, TipoAtivo } from "./tipos";
  */
 
 const UMA_HORA_MS = 60 * 60 * 1000;
+// Teto de itens: sem ele, milhares de buscas diferentes fariam a memória crescer sem limite.
+const MAX_ITENS_CACHE = 500;
 const cache = new Map<string, { valor: unknown; expira: number }>();
 
-/** Cache em memória por instância do servidor, para poupar as duas APIs. */
+/** Cache em memória por instância do servidor, para poupar as duas APIs. Só guarda sucessos. */
 async function comCache<T>(chave: string, buscar: () => Promise<T>): Promise<T> {
   const item = cache.get(chave);
   if (item && item.expira > Date.now()) return item.valor as T;
+  if (item) cache.delete(chave);
   const valor = await buscar();
+  // Map mantém a ordem de inserção: o primeiro item é o mais antigo.
+  while (cache.size >= MAX_ITENS_CACHE) {
+    const maisAntigo = cache.keys().next().value;
+    if (maisAntigo === undefined) break;
+    cache.delete(maisAntigo);
+  }
   cache.set(chave, { valor, expira: Date.now() + UMA_HORA_MS });
   return valor;
 }

@@ -58,10 +58,13 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-:focus-visible {
-  outline: 2px solid var(--cobalto);
-  outline-offset: 3px;
-  border-radius: 4px;
+/* Em @layer base para que utilitários como outline-none possam sobrescrever. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--cobalto);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
 }
 
 /* Campo "em branco" da frase da tela inicial: sublinhado, sem caixa. */

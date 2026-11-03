@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GraficoSaldo } from "./GraficoSaldo";
-import { simular } from "@/lib/simulacao";
+import { LIMITES, limitar, simular } from "@/lib/simulacao";
 import type { AtivoInfo } from "@/lib/tipos";
 import {
   escreverValor,
@@ -46,7 +46,7 @@ function ResultadoSimulacao() {
 
   const ticker = (params.get("ativo") ?? "").toUpperCase();
   const tipo = params.get("tipo") === "fii" ? "fii" : "acao";
-  const aporte = lerValor(params.get("aporte") ?? "");
+  const aporte = Math.min(lerValor(params.get("aporte") ?? ""), LIMITES.aporteMax);
 
   const [estado, setEstado] = useState<Estado>({ fase: "carregando" });
   const [anos, setAnos] = useState(() => {
@@ -100,8 +100,10 @@ function ResultadoSimulacao() {
     router.replace(`/resultado?${q}`, { scroll: false });
   }, [estado.fase, ticker, aporte, tipo, anos, dyTexto, valTexto, reinvestir, router]);
 
-  const dyAnual = lerPercentual(dyTexto ?? "");
-  const valorizacaoAnual = lerPercentual(valTexto);
+  const dyDigitado = lerPercentual(dyTexto ?? "");
+  const valDigitada = lerPercentual(valTexto);
+  const dyAnual = limitar(dyDigitado, LIMITES.dyMin, LIMITES.dyMax);
+  const valorizacaoAnual = limitar(valDigitada, LIMITES.valorizacaoMin, LIMITES.valorizacaoMax);
 
   const pontos = useMemo(() => {
     if (estado.fase !== "pronto") return [];
@@ -264,6 +266,11 @@ function ResultadoSimulacao() {
                 : "Não encontramos proventos deste ativo nos últimos 12 meses. Se ele paga, digite uma estimativa."
             }
             destaque={!ativo.dyFonte && !dyTexto}
+            aviso={
+              dyDigitado !== dyAnual
+                ? `Use entre 0% e 100%. Calculando com ${formatarPercentual(dyAnual)}.`
+                : undefined
+            }
           />
 
           <CampoPercentual
@@ -271,6 +278,11 @@ function ResultadoSimulacao() {
             rotulo="Valorização anual da cota"
             valor={valTexto}
             onChange={setValTexto}
+            aviso={
+              valDigitada !== valorizacaoAnual
+                ? `Use entre -90% e 100%. Calculando com ${formatarPercentual(valorizacaoAnual)}.`
+                : undefined
+            }
             ajuda={
               ativo.valorizacao12m !== null
                 ? `Nos últimos 12 meses a cota variou ${formatarPercentual(ativo.valorizacao12m)}. Começamos em 0% para não projetar o passado recente para sempre.`
@@ -358,6 +370,8 @@ function CampoPercentual(props: {
   onChange: (v: string) => void;
   ajuda: string;
   destaque?: boolean;
+  /** Mensagem quando o valor digitado está fora da faixa aceita. */
+  aviso?: string;
   acao?: { rotulo: string; aoClicar: () => void };
 }) {
   return (
@@ -367,7 +381,7 @@ function CampoPercentual(props: {
       </label>
       <div
         className={`flex w-44 items-center rounded-lg border bg-papel px-3 focus-within:border-cobalto ${
-          props.destaque ? "border-ocre" : "border-linha"
+          props.aviso ? "border-erro" : props.destaque ? "border-ocre" : "border-linha"
         }`}
       >
         <input
@@ -377,11 +391,17 @@ function CampoPercentual(props: {
           value={props.valor}
           placeholder="0"
           onChange={(e) => props.onChange(e.target.value.replace(/[^\d,.-]/g, ""))}
-          aria-describedby={`${props.id}-ajuda`}
+          aria-describedby={`${props.id}-ajuda${props.aviso ? ` ${props.id}-aviso` : ""}`}
+          aria-invalid={props.aviso ? true : undefined}
           className="w-full bg-transparent py-2 text-lg outline-none"
         />
         <span className="shrink-0 whitespace-nowrap text-apagado">% a.a.</span>
       </div>
+      {props.aviso && (
+        <p id={`${props.id}-aviso`} role="status" className="mt-2 max-w-[38ch] text-sm text-erro">
+          {props.aviso}
+        </p>
+      )}
       <p id={`${props.id}-ajuda`} className="mt-2 max-w-[38ch] text-sm text-apagado">
         {props.ajuda}
       </p>

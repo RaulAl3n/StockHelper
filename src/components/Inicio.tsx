@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CampoAtivo } from "./CampoAtivo";
 import { TelaCarregamento } from "./TelaCarregamento";
 import { SUGESTOES } from "@/lib/sugestoes";
-import { escreverValor, lerValor } from "@/lib/formato";
+import { escreverValor, formatarMoedaInteira, lerValor } from "@/lib/formato";
+import { LIMITES } from "@/lib/simulacao";
 import type { TipoAtivo } from "@/lib/tipos";
 
 const TICKER_VALIDO = /^[A-Z0-9]{4,7}$/;
@@ -52,6 +53,11 @@ export function Inicio() {
     const valor = lerValor(aporte);
     if (!(valor > 0)) {
       setErro("Digite quanto você investe por mês, por exemplo 500.");
+      document.getElementById("campo-aporte")?.focus();
+      return;
+    }
+    if (valor > LIMITES.aporteMax) {
+      setErro(`O aporte mensal pode ser de até ${formatarMoedaInteira(LIMITES.aporteMax)}.`);
       document.getElementById("campo-aporte")?.focus();
       return;
     }
