@@ -1,8 +1,8 @@
 import "server-only";
 import type { AtivoInfo, ResultadoBusca, TipoAtivo } from "./tipos";
+import { calcularDy, calcularValorizacao } from "./calculos";
 
 const BASE = "https://brapi.dev/api";
-const UM_ANO_MS = 365 * 24 * 60 * 60 * 1000;
 
 /** Erro com status HTTP, para a rota repassar ao front-end. */
 export class ErroBrapi extends Error {
@@ -44,7 +44,7 @@ type ListaBrapi = {
   }[];
 };
 
-export async function buscarAtivos(termo: string, tipo: TipoAtivo): Promise<ResultadoBusca[]> {
+export async function buscarAtivosBrapi(termo: string, tipo: TipoAtivo): Promise<ResultadoBusca[]> {
   const params = new URLSearchParams({ search: termo, limit: "8", sortBy: "volume" });
   if (tipo === "fii") {
     params.set("type", "fund");
@@ -97,37 +97,6 @@ async function buscarCotacao(ticker: string) {
   }
 }
 
-/** Soma dos dividendos com data-com (ou pagamento) nos últimos 12 meses, dividida pelo preço. */
-function calcularDy(
-  dividendos: { rate: number; paymentDate: string | null; lastDatePrior: string | null }[],
-  preco: number,
-): number | null {
-  if (!dividendos.length || preco <= 0) return null;
-  const agora = Date.now();
-  const soma = dividendos.reduce((total, d) => {
-    const data = d.lastDatePrior ?? d.paymentDate;
-    if (!data) return total;
-    const t = new Date(data).getTime();
-    return agora - t <= UM_ANO_MS && t <= agora ? total + d.rate : total;
-  }, 0);
-  return soma > 0 ? soma / preco : null;
-}
-
-function calcularValorizacao(
-  historico: { date: number; close: number | null; adjustedClose?: number | null }[],
-  precoAtual: number,
-): number | null {
-  const validos = historico
-    .map((p) => ({ data: p.date * 1000, preco: p.adjustedClose ?? p.close }))
-    .filter((p): p is { data: number; preco: number } => typeof p.preco === "number" && p.preco > 0)
-    .sort((a, b) => a.data - b.data);
-  if (validos.length < 2) return null;
-  // Só faz sentido falar em "12 meses" se o histórico cobre perto de um ano.
-  const cobertura = Date.now() - validos[0].data;
-  if (cobertura < UM_ANO_MS * 0.9) return null;
-  return precoAtual / validos[0].preco - 1;
-}
-
 /** A brapi não deixa claro se o DY de FIIs vem em % ou fração; normalizamos para fração. */
 function normalizarPercentual(valor: number): number {
   return valor > 1 ? valor / 100 : valor;
@@ -143,14 +112,18 @@ async function buscarDyFii(ticker: string): Promise<number | null> {
   }
 }
 
-export async function obterAtivo(ticker: string): Promise<AtivoInfo> {
+export async function obterAtivoBrapi(ticker: string): Promise<AtivoInfo> {
   const dados = await buscarCotacao(ticker);
   const r = dados.results?.[0];
   if (!r || typeof r.regularMarketPrice !== "number") {
     throw new ErroBrapi(`Ativo ${ticker} não encontrado`, 404);
   }
 
-  let dyAnual = calcularDy(r.dividendsData?.cashDividends ?? [], r.regularMarketPrice);
+  const proventos = (r.dividendsData?.cashDividends ?? []).map((d) => {
+    const data = d.lastDatePrior ?? d.paymentDate;
+    return { valor: d.rate, data: data ? new Date(data) : null };
+  });
+  let dyAnual = calcularDy(proventos, r.regularMarketPrice);
   let dyFonte = dyAnual !== null ? "Proventos dos últimos 12 meses" : null;
 
   if (dyAnual === null && ticker.endsWith("11")) {
@@ -165,7 +138,11 @@ export async function obterAtivo(ticker: string): Promise<AtivoInfo> {
     logo: r.logourl ?? null,
     dyAnual,
     dyFonte,
-    valorizacao12m: calcularValorizacao(r.historicalDataPrice ?? [], r.regularMarketPrice),
+    valorizacao12m: calcularValorizacao(
+      (r.historicalDataPrice ?? []).map((p) => ({ data: new Date(p.date * 1000), preco: p.close })),
+      r.regularMarketPrice,
+    ),
+    fonte: "brapi",
     atualizadoEm: new Date().toISOString(),
   };
 }

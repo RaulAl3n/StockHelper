@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ErroBrapi, obterAtivo } from "@/lib/brapi";
+import { ErroBrapi, obterAtivo } from "@/lib/fontes";
 
 const TICKER_VALIDO = /^[A-Z0-9]{4,7}$/;
 
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       if (erro.status === 401 || erro.status === 403) {
         return NextResponse.json(
           {
-            erro: `${ticker} precisa de um token da brapi. Configure BRAPI_TOKEN ou teste com PETR4, VALE3, ITUB4, MGLU3, MXRF11 ou HGLG11.`,
+            erro: `Não conseguimos os dados de ${ticker} no Yahoo Finance agora, e a fonte reserva (brapi) exige token para esse ativo. Tente de novo em alguns minutos.`,
           },
           { status: 403 },
         );

@@ -28,35 +28,41 @@ A lógica está isolada em `src/lib/simulacao.ts`, sem dependência de React, f�
 - Next.js (App Router) + React + TypeScript
 - Tailwind CSS
 - Recharts para o gráfico
-- [brapi.dev](https://brapi.dev) como fonte de dados
-- Sem banco de dados: o cálculo é feito no navegador e as respostas da API ficam em cache por 1 hora
+- [yahoo-finance2](https://github.com/gadicc/yahoo-finance2) (Yahoo Finance) como fonte principal de dados
+- [brapi.dev](https://brapi.dev) como fonte reserva
+- Sem banco de dados: o cálculo é feito no navegador e as respostas das APIs ficam em cache por 1 hora
 
 ## Arquitetura
 
 ```
-Navegador ──> /api/busca  ──┐
-          └─> /api/ativo  ──┴──> brapi.dev   (token só no servidor)
+Navegador ──> /api/busca ──┐                ┌──> Yahoo Finance  (principal, sem token)
+          └─> /api/ativo ──┴──> lib/fontes ─┤
+                                            └──> brapi.dev      (reserva)
 ```
 
-O front-end nunca chama a brapi diretamente. As rotas em `src/app/api/` fazem esse papel, o que mantém o token fora do navegador, evita problemas de CORS e permite cache.
+O front-end nunca chama as APIs de mercado diretamente. As rotas em `src/app/api/` passam por `src/lib/fontes.ts`, que tenta o Yahoo Finance e, se ele falhar ou não conhecer o ativo, recorre à brapi. Isso mantém tokens fora do navegador, evita problemas de CORS e permite cache.
+
+- **Yahoo Finance** (`src/lib/yahoo.ts`): ativos da B3 com sufixo `.SA`. Traz cotação, histórico e eventos de dividendos de ações e FIIs, sem token. É uma API não oficial e pode mudar sem aviso, por isso existe a reserva.
+- **brapi** (`src/lib/brapi.ts`): sem token só cobre PETR4, VALE3, ITUB4, MGLU3, MXRF11 e HGLG11; com o token gratuito cobre todos os ativos, mas sem dividendos.
+- **Cálculos** (`src/lib/calculos.ts`): dividend yield de 12 meses e valorização, compartilhados pelas duas fontes.
 
 ## Rodando localmente
 
 ```bash
 npm install
-cp .env.example .env.local   # opcional: cole seu BRAPI_TOKEN
+cp .env.example .env.local   # opcional: token da brapi, usada só como reserva
 npm run dev
 ```
 
 Abra http://localhost:3000.
 
-**Sem token** só funcionam PETR4, VALE3, ITUB4, MGLU3, MXRF11 e HGLG11 (ativos de teste liberados pela brapi). **Com o token gratuito**, todos os ativos funcionam, mas o plano grátis não traz dividendos nem histórico de 12 meses; nesses casos o site pede que o usuário informe o dividend yield.
+Não é preciso nenhum token: o Yahoo Finance atende todos os ativos. O `BRAPI_TOKEN` só amplia a cobertura da fonte reserva.
 
 ## Deploy no Vercel
 
 1. Suba o projeto para o GitHub.
 2. Importe o repositório em vercel.com/new.
-3. Em *Settings > Environment Variables*, adicione `BRAPI_TOKEN`.
+3. (Opcional) Em *Settings > Environment Variables*, adicione `BRAPI_TOKEN`.
 
 ## Limitações
 

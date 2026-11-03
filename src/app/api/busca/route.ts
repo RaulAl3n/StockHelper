@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buscarAtivos } from "@/lib/brapi";
+import { buscarAtivos } from "@/lib/fontes";
 import { SUGESTOES } from "@/lib/sugestoes";
 import type { TipoAtivo } from "@/lib/tipos";
 

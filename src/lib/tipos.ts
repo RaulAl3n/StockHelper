@@ -21,5 +21,7 @@ export type AtivoInfo = {
   dyFonte: string | null;
   /** Variação do preço nos últimos 12 meses em fração, ou null se não houver histórico suficiente. */
   valorizacao12m: number | null;
+  /** Fonte que respondeu: Yahoo Finance (principal) ou brapi (reserva). */
+  fonte: "Yahoo Finance" | "brapi";
   atualizadoEm: string;
 };

@@ -248,7 +248,7 @@ export function Resultado() {
             ajuda={
               ativo.dyFonte
                 ? `${ativo.dyFonte}: ${formatarPercentual(ativo.dyAnual ?? 0)}.`
-                : "A API não trouxe os proventos deste ativo no seu plano. Digite uma estimativa."
+                : "Não encontramos proventos deste ativo nos últimos 12 meses. Se ele paga, digite uma estimativa."
             }
             destaque={!ativo.dyFonte && !dyTexto}
           />
@@ -298,7 +298,7 @@ export function Resultado() {
       <p className="mt-12 max-w-prose text-xs leading-relaxed text-apagado">
         Simulação educativa, não é recomendação de investimento. Preço, proventos e valorização
         futuros não são garantidos. Não considera impostos, taxas nem inflação, e supõe compra de
-        cotas fracionárias. Dados de mercado: brapi.dev, consultados em{" "}
+        cotas fracionárias. Dados de mercado: {ativo.fonte}, consultados em{" "}
         {new Date(ativo.atualizadoEm).toLocaleString("pt-BR")}.
       </p>
     </Moldura>
