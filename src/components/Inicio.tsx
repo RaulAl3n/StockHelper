@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CampoAtivo } from "./CampoAtivo";
 import { TelaCarregamento } from "./TelaCarregamento";
@@ -27,6 +27,16 @@ export function Inicio() {
   const [tipo, setTipo] = useState<TipoAtivo>(params.get("tipo") === "fii" ? "fii" : "acao");
   const [ticker, setTicker] = useState("");
   const [erro, setErro] = useState<string | null>(null);
+
+  // O Next preserva esta página escondida ao navegar (React Activity). Ao sair,
+  // limpamos o ativo e o erro para que "Recomeçar" traga o campo vazio;
+  // o aporte e o tipo continuam, para facilitar testar outro ativo.
+  useLayoutEffect(() => {
+    return () => {
+      setTicker("");
+      setErro(null);
+    };
+  }, []);
 
   useEffect(() => {
     if (!abrindo) return;

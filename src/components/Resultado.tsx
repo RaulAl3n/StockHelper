@@ -27,7 +27,20 @@ function lerPercentual(texto: string) {
   return Number.isFinite(v) ? v / 100 : 0;
 }
 
+/**
+ * Com cacheComponents, o Next esconde a página ao navegar em vez de desmontá-la
+ * (React Activity) e preserva o estado. Sem a `key`, ao simular outro ativo o
+ * componente reaproveitaria o DY, o prazo e o resultado da simulação anterior.
+ * A chave muda só quando muda a simulação (ativo, aporte, tipo); ajustes de
+ * premissas, que também vão para a URL, não recriam o componente.
+ */
 export function Resultado() {
+  const params = useSearchParams();
+  const chave = ["ativo", "aporte", "tipo"].map((k) => params.get(k) ?? "").join("|");
+  return <ResultadoSimulacao key={chave} />;
+}
+
+function ResultadoSimulacao() {
   const router = useRouter();
   const params = useSearchParams();
 

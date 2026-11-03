@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { ResultadoBusca, TipoAtivo } from "@/lib/tipos";
 import { formatarMoeda } from "@/lib/formato";
 
@@ -67,6 +67,14 @@ export function CampoAtivo({ valor, tipo, onChange, onSelecionar }: Props) {
       controle.abort();
     };
   }, [valor, tipo, aberto]);
+
+  // Fecha a lista quando a página é escondida pela navegação (React Activity).
+  useLayoutEffect(() => {
+    return () => {
+      setAberto(false);
+      setResultados([]);
+    };
+  }, []);
 
   // Fecha a lista ao clicar fora.
   useEffect(() => {
