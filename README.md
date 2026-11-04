@@ -1,120 +1,122 @@
 # StockHelper
 
-**Quanto vira o seu aporte mensal?** O StockHelper simula quanto um investimento mensal em uma ação ou fundo imobiliário da B3 pode render ao longo dos anos, com base nos dados atuais do ativo: preço da cota e proventos pagos nos últimos 12 meses.
+**How much will your monthly investment grow?** StockHelper simulates how a fixed monthly investment in a Brazilian stock or real estate fund (FII) listed on B3 could grow over the years, based on the asset's current data: share price and dividends paid over the last 12 months.
 
-🔗 **Acesse:** [link do site no Vercel]
+🔗 **Live demo:** [Vercel link]
 
-<!-- Dica: grave um GIF curto da simulação e coloque aqui, por exemplo:
-![Demonstração do StockHelper](docs/demo.gif) -->
+<!-- Tip: record a short GIF of a simulation and add it here, e.g.:
+![StockHelper demo](docs/demo.gif) -->
 
-## Funcionalidades
+## Features
 
-- **Simulação mês a mês** de aportes, proventos e valorização da cota, com cotas fracionárias
-- **Ações e fundos imobiliários (FIIs)** da B3, com busca por código ou nome
-- **Gráfico de saldo × tempo** comparando o patrimônio com o total investido, com tooltip mês a mês
-- **Tabela ano a ano** com investido, saldo e proventos recebidos
-- **Premissas ajustáveis:** prazo (1 a 30 anos), dividend yield, valorização anual e reinvestimento dos proventos, com o gráfico atualizado na hora
-- **Links compartilháveis:** todas as premissas ficam na URL, então qualquer simulação pode ser enviada para outra pessoa
-- **Tema claro e escuro**, conforme o sistema, e layout responsivo para celular
+- **Month-by-month simulation** of contributions, dividends and share price growth, with fractional shares
+- **Stocks and real estate funds (FIIs)** from B3, searchable by ticker or name
+- **Balance × time chart** comparing portfolio value with total invested, with a monthly tooltip
+- **Year-by-year table** with amount invested, balance and dividends received
+- **Adjustable assumptions:** time horizon (1 to 30 years), dividend yield, annual price growth and dividend reinvestment, with the chart updating instantly
+- **Shareable links:** all assumptions are stored in the URL, so any simulation can be sent to someone else
+- **Light and dark themes** following the system setting, and a responsive layout for mobile
 
-## Como a simulação funciona
+## How the simulation works
 
-Para cada mês do período:
+For each month in the period:
 
 ```
-cotas    += aporte / preço
-proventos = cotas × preço × (DY anual / 12)
-cotas    += proventos / preço        (se reinvestir; senão vai para o caixa)
-preço    *= (1 + valorização anual)^(1/12)
-saldo     = cotas × preço + caixa
+shares    += contribution / price
+dividends  = shares × price × (annual DY / 12)
+shares    += dividends / price       (if reinvesting; otherwise kept as cash)
+price     *= (1 + annual growth)^(1/12)
+balance    = shares × price + cash
 ```
 
-- O **dividend yield** vem da soma dos proventos dos últimos 12 meses dividida pelo preço atual.
-- A **valorização** começa em 0%, para não projetar uma alta ou queda recente por décadas. Um botão permite usar a variação real dos últimos 12 meses.
-- Os valores são limitados a faixas que fazem sentido: aporte de até R$ 1 milhão, DY entre 0% e 100% e valorização entre -90% e 100% ao ano.
+- **Dividend yield** is the sum of dividends paid over the last 12 months divided by the current price.
+- **Price growth** starts at 0%, so a recent rally or drop isn't projected for decades. A button lets you use the actual price change over the last 12 months instead.
+- Inputs are capped to sensible ranges: contributions up to R$ 1 million, dividend yield between 0% and 100%, and price growth between -90% and 100% per year.
 
-A lógica fica em `src/lib/simulacao.ts`, uma função pura, sem dependência de React, fácil de testar.
+The logic lives in `src/lib/simulacao.ts` as a pure function with no React dependency, so it's easy to test.
 
-## Stack
+## Tech stack
 
-| Camada | Tecnologia |
+| Layer | Technology |
 |---|---|
 | Framework | Next.js 16 (App Router) + React 19 |
-| Linguagem | TypeScript |
-| Estilo | Tailwind CSS 4 |
-| Gráficos | Recharts |
-| Dados de mercado | Yahoo Finance via `yahoo-finance2` (principal) e brapi.dev (reserva) |
-| Hospedagem | Vercel |
+| Language | TypeScript |
+| Styling | Tailwind CSS 4 |
+| Charts | Recharts |
+| Market data | Yahoo Finance via `yahoo-finance2` (primary) and brapi.dev (fallback) |
+| Hosting | Vercel |
 
-Não há banco de dados: a simulação é calculada no navegador, e as respostas das APIs ficam em cache por 1 hora.
+There's no database: the simulation runs in the browser, and API responses are cached for 1 hour.
 
-## Arquitetura
+## Architecture
 
 ```
-Navegador ──> /api/busca ──┐                ┌──> Yahoo Finance  (principal, sem token)
-          └─> /api/ativo ──┴──> lib/fontes ─┤
-                                            └──> brapi.dev      (reserva)
+Browser ──> /api/busca ──┐                ┌──> Yahoo Finance  (primary, no token)
+        └─> /api/ativo ──┴──> lib/fontes ─┤
+                                          └──> brapi.dev      (fallback)
 ```
 
-O front-end nunca chama as APIs de mercado diretamente. As rotas em `src/app/api/` passam por `src/lib/fontes.ts`, que tenta o Yahoo Finance primeiro e, se ele falhar ou não conhecer o ativo, recorre à brapi. Isso mantém tokens fora do navegador, evita problemas de CORS e permite cache.
+The front end never calls the market data APIs directly. The routes in `src/app/api/` go through `src/lib/fontes.ts`, which tries Yahoo Finance first and falls back to brapi if Yahoo fails or doesn't know the asset. This keeps tokens out of the browser, avoids CORS issues and enables caching.
 
 ```
 src/
 ├── app/
-│   ├── api/ativo/     # cotação, DY e valorização de um ativo
-│   ├── api/busca/     # busca de ações e FIIs
-│   ├── resultado/     # página do gráfico
-│   └── page.tsx       # tela inicial
-├── components/        # telas, campo de busca e gráfico
+│   ├── api/ativo/     # price, dividend yield and growth for one asset
+│   ├── api/busca/     # stock and FII search
+│   ├── resultado/     # results page with the chart
+│   └── page.tsx       # home screen
+├── components/        # screens, search field and chart
 └── lib/
-    ├── simulacao.ts   # cálculo mês a mês
-    ├── calculos.ts    # DY de 12 meses e valorização
-    ├── fontes.ts      # Yahoo primeiro, brapi como reserva, cache
-    ├── yahoo.ts       # integração com o Yahoo Finance
-    ├── brapi.ts       # integração com a brapi
-    └── formato.ts     # leitura e formatação de valores em pt-BR
+    ├── simulacao.ts   # month-by-month calculation
+    ├── calculos.ts    # 12-month dividend yield and price growth
+    ├── fontes.ts      # Yahoo first, brapi as fallback, caching
+    ├── yahoo.ts       # Yahoo Finance integration
+    ├── brapi.ts       # brapi integration
+    └── formato.ts     # parsing and formatting of Brazilian-format numbers
 ```
 
-## Segurança
+> The interface is in Brazilian Portuguese, so some file and folder names are too.
 
-- O token da brapi é usado só no servidor (`server-only`) e nunca chega ao navegador.
-- O código do ativo é validado antes de qualquer chamada externa.
-- As mensagens de erro são genéricas e não expõem detalhes internos.
-- O cache em memória tem tamanho limitado.
-- O site envia cabeçalhos de segurança: bloqueio de iframe, `nosniff`, `Referrer-Policy` e `Permissions-Policy`.
-- Nenhum dado pessoal é coletado: não há login, banco de dados, cookies ou rastreamento.
+## Security
 
-## Rodando localmente
+- The brapi token is only used on the server (`server-only`) and never reaches the browser.
+- Tickers are validated before any external call.
+- Error messages are generic and don't expose internal details.
+- The in-memory cache has a size limit.
+- The site sends security headers: iframe blocking, `nosniff`, `Referrer-Policy` and `Permissions-Policy`.
+- No personal data is collected: no login, database, cookies or tracking.
 
-Requer Node.js 22 ou superior.
+## Running locally
+
+Requires Node.js 22 or later.
 
 ```bash
-git clone https://github.com/SEU-USUARIO/stockhelper.git
+git clone https://github.com/YOUR-USERNAME/stockhelper.git
 cd stockhelper
 npm install
 npm run dev
 ```
 
-Abra http://localhost:3000.
+Open http://localhost:3000.
 
-Nenhum token é necessário: o Yahoo Finance atende todos os ativos. Opcionalmente, crie um `.env.local` a partir do `.env.example` com um `BRAPI_TOKEN` gratuito de [brapi.dev](https://brapi.dev). Ele amplia a cobertura da fonte reserva, que sem token só atende PETR4, VALE3, ITUB4, MGLU3, MXRF11 e HGLG11.
+No token is required: Yahoo Finance covers every asset. Optionally, create a `.env.local` from `.env.example` with a free `BRAPI_TOKEN` from [brapi.dev](https://brapi.dev). It extends the fallback source, which without a token only covers PETR4, VALE3, ITUB4, MGLU3, MXRF11 and HGLG11.
 
-## Deploy no Vercel
+## Deploying to Vercel
 
-1. Suba o repositório para o GitHub.
-2. Importe o projeto em [vercel.com/new](https://vercel.com/new).
-3. (Opcional) Em *Settings > Environment Variables*, adicione `BRAPI_TOKEN`.
+1. Push the repository to GitHub.
+2. Import the project at [vercel.com/new](https://vercel.com/new).
+3. (Optional) Under *Settings > Environment Variables*, add `BRAPI_TOKEN`.
 
-## Limitações
+## Limitations
 
-- A biblioteca `yahoo-finance2` não é oficial e pode parar de funcionar se o Yahoo mudar algo. Por isso existe a fonte reserva.
-- A simulação não considera impostos, taxas, inflação nem lotes mínimos de compra.
-- Proventos e valorização passados não garantem resultados futuros.
+- `yahoo-finance2` is an unofficial library and may break if Yahoo changes something. That's why there's a fallback source.
+- The simulation doesn't account for taxes, fees, inflation or minimum lot sizes.
+- Past dividends and price growth don't guarantee future results.
 
-## Aviso
+## Disclaimer
 
-Projeto educativo. **Não é recomendação de investimento.**
+Educational project. **This is not investment advice.**
 
 ---
 
-Desenvolvido por [Seu Nome](https://www.linkedin.com/in/seu-perfil)
+Built by [Your Name](https://www.linkedin.com/in/your-profile)
