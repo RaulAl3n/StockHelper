@@ -2,7 +2,7 @@
 
 **How much will your monthly investment grow?** StockHelper simulates how a fixed monthly investment in a Brazilian stock or real estate fund (FII) listed on B3 could grow over the years, based on the asset's current data: share price and dividends paid over the last 12 months.
 
-🔗 **Live demo:** [\[Vercel link\]](https://stock-helper-omega.vercel.app/)
+🔗 **Live demo:** [Vercel link]
 
 <!-- Tip: record a short GIF of a simulation and add it here, e.g.:
 ![StockHelper demo](docs/demo.gif) -->
@@ -41,38 +41,54 @@ The logic lives in `src/lib/simulacao.ts` as a pure function with no React depen
 |---|---|
 | Framework | Next.js 16 (App Router) + React 19 |
 | Language | TypeScript |
+| Server state | TanStack Query (React Query) 5 |
 | Styling | Tailwind CSS 4 |
 | Charts | Recharts |
 | Market data | Yahoo Finance via `yahoo-finance2` (primary) and brapi.dev (fallback) |
 | Hosting | Vercel |
 
-There's no database: the simulation runs in the browser, and API responses are cached for 1 hour.
+There's no database: the simulation runs in the browser, and market data is cached for 1 hour on both the server and the client.
 
 ## Architecture
 
+The front end follows a **service → hook → page** layered architecture:
+
 ```
-Browser ──> /api/busca ──┐                ┌──> Yahoo Finance  (primary, no token)
-        └─> /api/ativo ──┴──> lib/fontes ─┤
-                                          └──> brapi.dev      (fallback)
+page (components/pages)      renders the screen and holds UI state only
+  │  uses
+hook (hooks/)                React Query: loading, errors, caching, retries, prefetching
+  │  calls
+service (services/)          plain async functions that make the HTTP requests
+  │  HTTP
+API route (app/api/)         backend for the front end; validates input
+  │
+server (server/)             Yahoo Finance first, brapi as fallback, in-memory cache
 ```
 
-The front end never calls the market data APIs directly. The routes in `src/app/api/` go through `src/lib/fontes.ts`, which tries Yahoo Finance first and falls back to brapi if Yahoo fails or doesn't know the asset. This keeps tokens out of the browser, avoids CORS issues and enables caching.
+- **Pages never call `fetch`.** They only use hooks, so loading and error states come from React Query instead of hand-written `useEffect` code.
+- **Hooks** wrap services with `useQuery`. Query keys live in one place (`hooks/queryKeys.ts`). `useBuscaAtivos` debounces typing and keeps previous results on screen while new ones load. `usePrefetchAtivo` starts loading an asset before navigating to its results page.
+- **Services** know nothing about React. They turn API errors into a typed `ErroApi` with a message ready to show.
+- **Retries:** server errors (5xx) are retried once automatically; client errors (4xx, such as an unknown ticker) are not. The results page also has a "Try again" button.
+- **Read-only domain:** the app only reads market data, so services expose queries only. Writes, such as saved favorites, would be added as new service functions consumed through `useMutation` hooks.
+
+The front end never calls the market data APIs directly. That keeps tokens out of the browser, avoids CORS issues and enables server-side caching.
 
 ```
 src/
 ├── app/
-│   ├── api/ativo/     # price, dividend yield and growth for one asset
-│   ├── api/busca/     # stock and FII search
-│   ├── resultado/     # results page with the chart
-│   └── page.tsx       # home screen
-├── components/        # screens, search field and chart
-└── lib/
-    ├── simulacao.ts   # month-by-month calculation
-    ├── calculos.ts    # 12-month dividend yield and price growth
-    ├── fontes.ts      # Yahoo first, brapi as fallback, caching
-    ├── yahoo.ts       # Yahoo Finance integration
-    ├── brapi.ts       # brapi integration
-    └── formato.ts     # parsing and formatting of Brazilian-format numbers
+│   ├── api/ativo/          # GET: price, dividend yield and growth for one asset
+│   ├── api/busca/          # GET: stock and FII search
+│   ├── resultado/page.tsx  # route: mounts ResultadoPage
+│   ├── page.tsx            # route: mounts InicioPage
+│   └── providers.tsx       # QueryClient setup
+├── components/
+│   ├── pages/              # InicioPage, ResultadoPage
+│   └── ...                 # search field, chart, table, form inputs
+├── hooks/                  # useAtivo, useBuscaAtivos, useSimulacao, useDebounce, queryKeys
+├── services/               # http.ts (fetch + ErroApi), ativoService.ts
+├── server/                 # mercado.ts, calculos.ts, providers/yahoo.ts, providers/brapi.ts
+├── lib/                    # simulation, number formatting, validation, suggestions
+└── types/                  # shared types
 ```
 
 > The interface is in Brazilian Portuguese, so some file and folder names are too.
@@ -80,7 +96,7 @@ src/
 ## Security
 
 - The brapi token is only used on the server (`server-only`) and never reaches the browser.
-- Tickers are validated before any external call.
+- Tickers are validated (shared rule in `lib/validacao.ts`) before any external call.
 - Error messages are generic and don't expose internal details.
 - The in-memory cache has a size limit.
 - The site sends security headers: iframe blocking, `nosniff`, `Referrer-Policy` and `Permissions-Policy`.
@@ -91,13 +107,13 @@ src/
 Requires Node.js 22 or later.
 
 ```bash
-git clone https://github.com/RaulAl3n/StockHelper
+git clone https://github.com/YOUR-USERNAME/stockhelper.git
 cd stockhelper
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000. In development, the React Query Devtools button appears in the bottom-left corner; it's left out of production builds.
 
 No token is required: Yahoo Finance covers every asset. Optionally, create a `.env.local` from `.env.example` with a free `BRAPI_TOKEN` from [brapi.dev](https://brapi.dev). It extends the fallback source, which without a token only covers PETR4, VALE3, ITUB4, MGLU3, MXRF11 and HGLG11.
 
@@ -119,4 +135,4 @@ Educational project. **This is not investment advice.**
 
 ---
 
-Built by [Raul Scalassara Alencar](https://www.linkedin.com/in/raul-alencar-a6a40435a/)
+Built by [Your Name](https://www.linkedin.com/in/your-profile)
