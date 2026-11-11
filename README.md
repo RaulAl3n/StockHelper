@@ -2,7 +2,7 @@
 
 **How much will your monthly investment grow?** StockHelper simulates how a fixed monthly investment in a Brazilian stock or real estate fund (FII) listed on B3 could grow over the years, based on the asset's current data: share price and dividends paid over the last 12 months.
 
-🔗 **Live demo:** [Vercel link]
+🔗 **Live demo:** [[Vercel link](https://stock-helper-omega.vercel.app/)]
 
 <!-- Tip: record a short GIF of a simulation and add it here, e.g.:
 ![StockHelper demo](docs/demo.gif) -->
@@ -117,12 +117,6 @@ Open http://localhost:3000. In development, the React Query Devtools button appe
 
 No token is required: Yahoo Finance covers every asset. Optionally, create a `.env.local` from `.env.example` with a free `BRAPI_TOKEN` from [brapi.dev](https://brapi.dev). It extends the fallback source, which without a token only covers PETR4, VALE3, ITUB4, MGLU3, MXRF11 and HGLG11.
 
-## Deploying to Vercel
-
-1. Push the repository to GitHub.
-2. Import the project at [vercel.com/new](https://vercel.com/new).
-3. (Optional) Under *Settings > Environment Variables*, add `BRAPI_TOKEN`.
-
 ## Limitations
 
 - `yahoo-finance2` is an unofficial library and may break if Yahoo changes something. That's why there's a fallback source.
@@ -135,4 +129,4 @@ Educational project. **This is not investment advice.**
 
 ---
 
-Built by [Your Name](https://www.linkedin.com/in/your-profile)
+Built by [Raul Scalassara Alencar]([https://www.linkedin.com/in/your-profile](https://www.linkedin.com/in/raul-alencar-a6a40435a/))
